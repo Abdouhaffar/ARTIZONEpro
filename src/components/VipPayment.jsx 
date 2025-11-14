@@ -1,0 +1,65 @@
+import React, { useState } from "react";
+import UploadImage from "./UploadImage";
+import { db, auth } from "../firebaseConfig";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+export default function VipPayment() {
+  const [plan, setPlan] = useState("month1");
+  const [proofUrl, setProofUrl] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const prices = {
+    month1: 300,
+    months6: 1500,
+    year12: 2500
+  };
+
+  const submitVip = async () => {
+    if (!auth.currentUser) return setMsg("يجب تسجيل الدخول.");
+
+    try {
+      await addDoc(collection(db, "vipRequests"), {
+        uid: auth.currentUser.uid,
+        plan,
+        price: prices[plan],
+        proofUrl,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+
+      setMsg("✔ تم إرسال طلب VIP وسيتم مراجعته قريباً");
+    } catch (err) {
+      console.error(err);
+      setMsg("حدث خطأ أثناء الإرسال");
+    }
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>✨ الاشتراك المميز VIP</h2>
+
+      <label>اختر الخطة:</label>
+      <select
+        value={plan}
+        onChange={(e) => setPlan(e.target.value)}
+        style={{ display: "block", marginTop: 10 }}
+      >
+        <option value="month1">1 شهر — 300 دج</option>
+        <option value="months6">6 أشهر — 1500 دج</option>
+        <option value="year12">12 شهر — 2500 دج</option>
+      </select>
+
+      <h3 style={{ marginTop: 20 }}>📤 رفع وصل الدفع:</h3>
+      <UploadImage onUploaded={setProofUrl} />
+
+      <button
+        onClick={submitVip}
+        style={{ marginTop: 20, padding: "10px 20px" }}
+      >
+        إرسال الطلب
+      </button>
+
+      {msg && <p style={{ marginTop: 15 }}>{msg}</p>}
+    </div>
+  );
+}
