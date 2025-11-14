@@ -1,0 +1,56 @@
+import React, { useState } from "react";
+import { storage } from "../firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+export default function UploadImage({ onUploaded }) {
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImage(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const upload = async () => {
+    if (!image) return alert("اختر صورة أولاً");
+
+    setLoading(true);
+    try {
+      const storageRef = ref(
+        storage,
+        `uploads/${Date.now()}_${image.name}`
+      );
+
+      await uploadBytes(storageRef, image);
+      const url = await getDownloadURL(storageRef);
+
+      onUploaded(url);
+      alert("✔ تم الرفع بنجاح");
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء الرفع");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ padding: 10 }}>
+      <input type="file" accept="image/*" onChange={handleSelect} />
+
+      {preview && (
+        <img
+          src={preview}
+          alt="preview"
+          style={{ width: 150, marginTop: 10, borderRadius: 10 }}
+        />
+      )}
+
+      <button onClick={upload} disabled={loading} style={{ marginTop: 10 }}>
+        {loading ? "جاري الرفع..." : "رفع الصورة"}
+      </button>
+    </div>
+  );
+}
